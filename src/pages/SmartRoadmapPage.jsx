@@ -1,105 +1,227 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import axios from "axios";
+import ReactFlow, { Background, Controls } from "react-flow-renderer";
+import "react-flow-renderer/dist/style.css";
+import "react-flow-renderer/dist/theme-default.css";
 
-export default function SmartRoadmapPage() {
-
-  const [form, setForm] = useState({
-    name: "",
-    field: "",
-    level: "",
-    goal: "",
-  });
-
-  const [roadmap, setRoadmap] = useState(null);
+const SmartRoadMap = () => {
+  const [goal, setGoal] = useState("");
+  const [level, setLevel] = useState("");
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const handleGenerate = async () => {
+  const generateRoadmap = async () => {
+    if (!goal || !level) {
+      alert("Please enter goal and level");
+      return;
+    }
+
     setLoading(true);
 
-    const prompt = `Generate a roadmap for ${form.field} for a ${form.level} student aiming to ${form.goal}`;
-
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.sk - proj - hr - FiOzma6HdJp3J63qDqFBIgfMq3OpmdCFC4dbsdimFninH7kK6wUWcIyg_dVnGBfoEivcMzIT3BlbkFJnMAf4gw010IxoFAhg6JPIxqrlMzXdumeBW4Zd6w8Ihq_armffY4hE - D1FePdJ3ZJotOm9E99oA,
-          "anthropic-version": "2023-06-01",
+      const response = await axios.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "user",
+              content: `Create a structured learning roadmap for "${goal}" for a ${level} student.
+Return ONLY a raw JSON array of objects strictly in this format without markdown wrappers:
+[{"title": "Step 1: Basics", "info": "Detailed description of what to learn..."}, {"title": "Step 2: Advanced", "info": "Detailed description..."}]`,
+            },
+          ],
         },
-        body: JSON.stringify({
-          model: "claude-opus-4-5",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }],
-        }),
+        {
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      let steps = [];
+
+      try {
+        let textResponse = response.data.choices[0].message.content;
+        textResponse = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+        steps = JSON.parse(textResponse);
+      } catch (err) {
+        console.error("JSON parse failed. Fallback triggered.", err);
+        // Fallback if AI returns plain list
+        const rawSteps = response.data.choices[0].message.content.split("\n").filter(s => s.trim().length > 3);
+        steps = rawSteps.map(s => ({ title: s.replace(/^[0-9.-]+\s*/, ''), info: "" }));
+      }
+
+      const colors = ["#ec4899", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#f43f5e"];
+
+      // 1. Create a Root Context Node
+      const rootNode = {
+        id: "root",
+        data: {
+          label: (
+            <div className="flex flex-col items-center justify-center p-2 text-center gap-2">
+              <span className="bg-white/10 text-white/70 text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full w-fit">
+                Your Roadmap
+              </span>
+              <strong className="text-white text-xl capitalize leading-tight">{goal}</strong>
+              <span className="text-cyan-400 font-medium text-sm">Level: {level}</span>
+            </div>
+          )
+        },
+        position: { x: window.innerWidth / 2 - 150, y: 0 },
+        style: {
+          padding: 20,
+          borderRadius: 16,
+          background: "linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(6, 182, 212, 0.4))",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.2)",
+          color: "#fff",
+          width: 320,
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.6)",
+        },
+      };
+
+      // 2. Create Flow Nodes for Steps
+      const stepNodes = steps.map((step, index) => {
+        const color = colors[index % colors.length];
+        return {
+          id: `${index}`,
+          data: { 
+            label: (
+              <div className="flex flex-col gap-1 text-left">
+                <strong className="text-base" style={{ color }}>{step.title}</strong>
+                {step.info && <p className="text-zinc-300 text-xs mt-2 leading-relaxed">{step.info}</p>}
+              </div>
+            ) 
+          },
+          position: { x: window.innerWidth / 2 - 150, y: (index + 1) * 200 },
+          style: {
+            padding: 16,
+            borderRadius: 12,
+            border: `2px solid ${color}40`, // 40 hex opacity
+            backgroundColor: "rgba(24, 24, 27, 0.95)",
+            color: "#fff",
+            width: 320,
+            boxShadow: `0 4px 20px -2px ${color}20`,
+          },
+        };
       });
 
-      const data = await res.json();
-      const text = data.content?.[0]?.text || "";
+      const flowNodes = [rootNode, ...stepNodes];
 
-      setRoadmap(text);
-    } catch (err) {
-      console.error(err);
+      // 3. Create Edges linking Root -> Step 0, Step 0 -> Step 1, etc.
+      const flowEdges = [
+        {
+          id: `e-root-0`,
+          source: "root",
+          target: "0",
+          animated: true,
+          style: { stroke: "#fff", strokeWidth: 2, opacity: 0.5 }
+        },
+        ...steps.slice(1).map((_, index) => {
+          const color = colors[index % colors.length];
+          return {
+            id: `e${index}-${index + 1}`,
+            source: `${index}`,
+            target: `${index + 1}`,
+            animated: true,
+            style: { stroke: color, strokeWidth: 2 }
+          };
+        })
+      ];
+
+      setNodes(flowNodes);
+      setEdges(flowEdges);
+    } catch (error) {
+      console.error(error);
+      alert("Error generating roadmap");
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f11] text-white">
+    <div className="min-h-screen w-full flex flex-col bg-[#0f0f11] text-white p-6 lg:p-12 relative overflow-hidden">
 
-      {/* HERO UI (Code 1) */}
-      <div className="px-10 py-20 flex flex-col items-center text-center">
+      {/* Glow blobs background */}
+      <div className="absolute top-[-100px] left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-violet-700 opacity-10 blur-[130px] pointer-events-none" />
 
-        <h1 className="text-5xl font-bold mb-6">
-          AI Roadmap Generator 🚀
-        </h1>
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col h-full">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">
+            Smart{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400 tracking-tight">
+              Roadmap Generator
+            </span>
+          </h1>
+          <p className="text-zinc-400 max-w-xl mx-auto">
+            Input your goal and let AI map out the exact path you need to take to master your target field.
+          </p>
+        </div>
 
-        <p className="text-gray-400 mb-10 max-w-xl">
-          Generate your personalized learning roadmap using AI
-        </p>
-
-        {/* FORM (from Code 2 logic) */}
-        <div className="bg-[#18181b] p-6 rounded-xl w-full max-w-md space-y-4">
-
+        {/* Input Section */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-[#18181b]/80 backdrop-blur-xl border border-white/[0.08] p-4 rounded-2xl shadow-2xl w-full max-w-4xl mx-auto">
           <input
-            placeholder="Your Name"
-            className="w-full p-3 rounded bg-black border border-gray-700"
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            type="text"
+            placeholder="Enter your goal (e.g. Data Science)"
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-5 py-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-violet-500/50 transition-colors"
           />
 
-          <input
-            placeholder="Field (e.g. Web Dev)"
-            className="w-full p-3 rounded bg-black border border-gray-700"
-            onChange={(e) => setForm({ ...form, field: e.target.value })}
-          />
-
-          <input
-            placeholder="Level (Beginner/Intermediate)"
-            className="w-full p-3 rounded bg-black border border-gray-700"
-            onChange={(e) => setForm({ ...form, level: e.target.value })}
-          />
-
-          <input
-            placeholder="Goal"
-            className="w-full p-3 rounded bg-black border border-gray-700"
-            onChange={(e) => setForm({ ...form, goal: e.target.value })}
-          />
+          <select
+            value={level}
+            onChange={(e) => setLevel(e.target.value)}
+            className="w-full md:w-48 bg-black/40 border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors appearance-none"
+          >
+            <option value="" className="text-zinc-500">Select Level</option>
+            <option value="beginner" className="text-black">Beginner</option>
+            <option value="intermediate" className="text-black">Intermediate</option>
+            <option value="advanced" className="text-black">Advanced</option>
+          </select>
 
           <button
-            onClick={handleGenerate}
-            className="w-full bg-violet-600 p-3 rounded font-semibold hover:bg-violet-500"
+            onClick={generateRoadmap}
+            disabled={loading}
+            className="bg-violet-600 hover:bg-violet-500 text-white font-medium text-sm px-8 py-3.5 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40 whitespace-nowrap min-w-[140px]"
           >
-            {loading ? "Generating..." : "Generate Roadmap"}
+            {loading ? (
+              <span className="flex items-center gap-2 justify-center">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                Generating...
+              </span>
+            ) : (
+              "Generate"
+            )}
           </button>
         </div>
 
-        {/* RESULT */}
-        {roadmap && (
-          <div className="mt-10 bg-[#18181b] p-6 rounded-xl max-w-2xl text-left whitespace-pre-wrap">
-            {roadmap}
-          </div>
-        )}
-
+        {/* Flowchart Section */}
+        <div className="flex-1 min-h-[500px] md:min-h-[600px] w-full bg-black/40 backdrop-blur-sm border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl relative">
+          {nodes.length === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-600 gap-4">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-40">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+                <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+                <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <p>Your personalized roadmap chart will appear here</p>
+            </div>
+          ) : (
+            <ReactFlow nodes={nodes} edges={edges} fitView minZoom={0.5} maxZoom={2}>
+              <Background color="#52525b" gap={16} size={1} />
+              <Controls className="bg-[#18181b] border-white/10 fill-white rounded-xl overflow-hidden shadow-xl" />
+            </ReactFlow>
+          )}
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default SmartRoadMap;
