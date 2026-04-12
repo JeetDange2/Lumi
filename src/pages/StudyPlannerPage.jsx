@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, auth } from "../services/firebase";
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, where } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function StudyPlannerPage() {
@@ -15,18 +15,30 @@ export default function StudyPlannerPage() {
   const [showPlanner, setShowPlanner] = useState(false);
   const plannerRef = useRef(null);
 
-  // Modal State
+  // Planner Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [newEvent, setNewEvent] = useState({ title: "", type: "Study" });
+
+  // Flashcards State
+  const [decks, setDecks] = useState([]);
+  const [isCreatingDeck, setIsCreatingDeck] = useState(false);
+  const [newDeckTitle, setNewDeckTitle] = useState("");
+  const [newCards, setNewCards] = useState([{ question: "", answer: "" }]);
+
+  const [activeDeck, setActiveDeck] = useState(null);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         fetchEvents(currentUser.uid);
+        fetchDecks(currentUser.uid);
       } else {
         setEvents([]);
+        setDecks([]);
         setLoading(false);
       }
     });
@@ -49,16 +61,29 @@ export default function StudyPlannerPage() {
     }
   };
 
+  const fetchDecks = async (uid) => {
+    try {
+      const q = query(collection(db, "flashcard_decks"), where("userId", "==", uid));
+      const querySnapshot = await getDocs(q);
+      const fetchedDecks = [];
+      querySnapshot.forEach((docSnap) => {
+        fetchedDecks.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setDecks(fetchedDecks);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleOpenPlanner = () => {
     setShowPlanner(true);
     setTimeout(() => {
-      plannerRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+      plannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 250);
   };
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 is Sunday
 
@@ -77,7 +102,6 @@ export default function StudyPlannerPage() {
     e.preventDefault();
     if (!newEvent.title.trim() || !user) return;
     
-    // Normalize date
     const offset = selectedDate.getTimezoneOffset();
     const targetDate = new Date(selectedDate.getTime() - (offset * 60 * 1000));
     const dateStr = targetDate.toISOString().split("T")[0];
@@ -88,9 +112,10 @@ export default function StudyPlannerPage() {
         date: dateStr,
         title: newEvent.title,
         type: newEvent.type,
+        completed: false,
         createdAt: new Date().toISOString()
       });
-      setEvents([...events, { id: docRef.id, date: dateStr, title: newEvent.title, type: newEvent.type }]);
+      setEvents([...events, { id: docRef.id, date: dateStr, title: newEvent.title, type: newEvent.type, completed: false }]);
       setNewEvent({ title: "", type: "Study" });
     } catch (err) {
       console.error("Error adding event:", err);
@@ -103,6 +128,17 @@ export default function StudyPlannerPage() {
       setEvents(events.filter(e => e.id !== id));
     } catch (err) {
       console.error("Error deleting event:", err);
+    }
+  };
+
+  const handleToggleComplete = async (ev) => {
+    try {
+      await updateDoc(doc(db, "planner_events", ev.id), {
+        completed: !ev.completed
+      });
+      setEvents(events.map(e => e.id === ev.id ? { ...e, completed: !e.completed } : e));
+    } catch(err) {
+      console.error("Error updating event:", err);
     }
   };
 
@@ -158,9 +194,9 @@ export default function StudyPlannerPage() {
                 <div className={`text-sm font-medium mb-1.5 inline-flex w-7 h-7 items-center justify-center rounded-full transition-colors ${isTodayHighlight ? 'bg-cyan-600 text-white' : 'text-zinc-400 group-hover:text-white'}`}>{d}</div>
                 <div className="flex flex-col gap-1 mt-1">
                     {dayEvents.slice(0, 3).map((ev, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5">
+                        <div key={idx} className={`flex items-center gap-1.5 ${ev.completed ? 'opacity-40' : ''}`}>
                             <span className={`w-2 h-2 rounded-full ${EVENT_COLORS[ev.type] || 'bg-white'}`}></span>
-                            <span className="text-[10px] text-zinc-100 truncate">{ev.title}</span>
+                            <span className={`text-[10px] truncate ${ev.completed ? 'text-zinc-500 line-through' : 'text-zinc-100'}`}>{ev.title}</span>
                         </div>
                     ))}
                     {dayEvents.length > 3 && (
@@ -172,6 +208,67 @@ export default function StudyPlannerPage() {
     }
 
     return [...blanks, ...days];
+  };
+
+  // --- Flashcard Operations ---
+  const handleAddCardRow = () => {
+      setNewCards([...newCards, { question: "", answer: "" }]);
+  };
+
+  const handleUpdateCardRow = (index, field, value) => {
+      const updated = [...newCards];
+      updated[index][field] = value;
+      setNewCards(updated);
+  };
+
+  const handleSaveDeck = async () => {
+      if(!user || !newDeckTitle.trim()) return;
+      const validCards = newCards.filter(c => c.question.trim() && c.answer.trim());
+      if(validCards.length === 0) return;
+      
+      try {
+          const docRef = await addDoc(collection(db, "flashcard_decks"), {
+              userId: user.uid,
+              title: newDeckTitle,
+              cards: validCards,
+              createdAt: new Date().toISOString()
+          });
+          setDecks([{ id: docRef.id, title: newDeckTitle, cards: validCards }, ...decks]);
+          setIsCreatingDeck(false);
+          setNewDeckTitle("");
+          setNewCards([{ question: "", answer: "" }]);
+      } catch(err) {
+          console.error("Error creating deck:", err);
+      }
+  };
+
+  const startStudy = (deck) => {
+      if(deck.cards.length === 0) return;
+      setActiveDeck(deck);
+      setCurrentCardIndex(0);
+      setIsFlipped(false);
+  };
+
+  const nextCard = () => {
+      setIsFlipped(false);
+      setTimeout(() => {
+          if (currentCardIndex < activeDeck.cards.length - 1) {
+             setCurrentCardIndex(currentCardIndex + 1);
+          } else {
+             // Finished deck
+             setActiveDeck(null);
+             setIsFlipped(false);
+          }
+      }, 250); 
+  };
+  
+  const prevCard = () => {
+      setIsFlipped(false);
+      setTimeout(() => {
+          if (currentCardIndex > 0) {
+             setCurrentCardIndex(currentCardIndex - 1);
+          }
+      }, 250);
   };
 
   return (
@@ -203,7 +300,7 @@ export default function StudyPlannerPage() {
       </nav>
 
       {/* Hero Section */}
-      <main className="relative z-10 px-6 md:px-12 py-10 max-w-5xl mx-auto mb-10">
+      <main className="relative z-10 px-6 md:px-12 py-10 max-w-5xl mx-auto mb-10 transition-all duration-700 ease-in-out">
         <div className="flex flex-col md:flex-row gap-12 items-center">
           {/* Left Text */}
           <div className="flex-1">
@@ -230,8 +327,8 @@ export default function StudyPlannerPage() {
               >
                 Create Schedule
               </button>
-              <button className="bg-white/[0.05] hover:bg-white/10 border border-white/[0.08] text-white font-medium px-8 py-3.5 rounded-xl transition-all duration-200 active:scale-95">
-                Learn Time-blocking
+              <button onClick={() => navigate("/performance-tracker")} className="bg-white/[0.05] hover:bg-white/10 border border-white/[0.08] text-white font-medium px-8 py-3.5 rounded-xl transition-all duration-200 active:scale-95">
+                View Analytics
               </button>
             </div>
           </div>
@@ -240,9 +337,7 @@ export default function StudyPlannerPage() {
           <div className="flex-1 w-full max-w-md">
             <div className="bg-[#18181b]/80 backdrop-blur-xl border border-white/[0.08] rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-400" />
-
               <div className="space-y-6">
-                {/* Step 1 */}
                 <div className="flex items-center gap-4 bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05]">
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/30">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -258,8 +353,6 @@ export default function StudyPlannerPage() {
                   </div>
                   <span className="ml-auto text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">Completed</span>
                 </div>
-
-                {/* Step 2 */}
                 <div className="flex items-center gap-4 bg-cyan-500/10 p-4 rounded-2xl border border-cyan-500/20 shadow-lg shadow-cyan-900/20">
                   <div className="w-10 h-10 rounded-xl bg-cyan-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-cyan-900/50">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -276,32 +369,27 @@ export default function StudyPlannerPage() {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                   </span>
                 </div>
-
-                {/* Step 3 */}
-                <div className="flex items-center gap-4 bg-white/[0.03] p-4 rounded-2xl border border-white/[0.05] opacity-60">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center shrink-0 border border-zinc-700">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="5 3 19 12 5 21 5 3" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium text-sm">Next, 4:00 PM</h3>
-                    <p className="text-xs text-zinc-500">Break & Reflection</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Hidden/Revealed Calendar Section */}
+      {/* Hidden/Revealed Section */}
       {showPlanner && (
         <section ref={plannerRef} className="relative z-10 px-6 md:px-12 pb-20 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500 pt-10 border-t border-white/[0.05]">
+          
+          {/* Header */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-              <div>
-                  <h2 className="text-2xl font-bold tracking-tight text-white mb-2">Your Dashboard</h2>
-                  <p className="text-sm text-zinc-400">Organize and track your upcoming learning sessions.</p>
+              <div className="flex items-center gap-6">
+                  <div>
+                      <h2 className="text-2xl font-bold tracking-tight text-white mb-2">Your Dashboard</h2>
+                      <p className="text-sm text-zinc-400">Organize and track your upcoming learning sessions.</p>
+                  </div>
+                  <button onClick={() => navigate("/focus")} className="hidden md:flex ml-4 items-center gap-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-all border border-emerald-500/30">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Enter Focus Mode
+                  </button>
               </div>
               
               {/* Month Controls */}
@@ -332,10 +420,118 @@ export default function StudyPlannerPage() {
                   {renderCalendarDays()}
               </div>
           </div>
+
+          {/* Flashcard Vault */}
+          <div className="mt-16 pt-12 border-t border-white/[0.05]">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                   <h2 className="text-2xl font-bold tracking-tight text-white mb-2 ml-1">The Flashcard Vault</h2>
+                   <p className="text-sm text-zinc-400 ml-1">Master active recall with your personal 3D decks.</p>
+                </div>
+                <button onClick={() => setIsCreatingDeck(!isCreatingDeck)} className={`${isCreatingDeck ? 'bg-white/[0.1] text-white' : 'bg-white/[0.02] text-zinc-400'} hover:bg-white/[0.1] hover:text-white border border-white/[0.08] px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Create Deck
+                </button>
+            </div>
+
+            {/* Deck List & Creator */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {isCreatingDeck && (
+                    <div className="bg-[#18181b]/80 border border-fuchsia-500/30 rounded-2xl p-6 shadow-2xl lg:col-span-2 xl:col-span-3 animate-in fade-in zoom-in-95 duration-300">
+                        <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-pink-500">Builder Mode</h3>
+                        <input type="text" placeholder="Deck Title (e.g. DSA)" value={newDeckTitle} onChange={e => setNewDeckTitle(e.target.value)} className="w-full bg-[#0f0f11] border border-white/[0.1] rounded-xl px-4 py-3 mb-6 text-sm text-white outline-none focus:border-fuchsia-500 transition-colors shadow-inner" />
+                        
+                        <div className="space-y-3 mb-6">
+                            {newCards.map((c, idx) => (
+                                <div key={idx} className="flex flex-col md:flex-row gap-3 md:items-center bg-white/[0.02] p-4 rounded-xl border border-white/[0.05]">
+                                    <span className="text-xs font-bold text-zinc-500 w-4 hidden md:block">{idx+1}</span>
+                                    <input type="text" placeholder="Question" value={c.question} onChange={e => handleUpdateCardRow(idx, 'question', e.target.value)} className="flex-1 bg-transparent border-b border-zinc-700 focus:border-fuchsia-500 px-2 py-2 text-sm text-white outline-none transition-colors" />
+                                    <input type="text" placeholder="Answer" value={c.answer} onChange={e => handleUpdateCardRow(idx, 'answer', e.target.value)} className="flex-1 bg-transparent border-b border-zinc-700 focus:border-cyan-500 px-2 py-2 text-sm text-white outline-none transition-colors" />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <button onClick={handleAddCardRow} className="text-xs font-medium text-zinc-400 hover:text-white transition-colors bg-white/[0.05] hover:bg-white/[0.1] px-3 py-1.5 rounded-lg border border-white/[0.08]">+ Add Card</button>
+                            <button onClick={handleSaveDeck} disabled={!user || !newDeckTitle} className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-fuchsia-900/40 active:scale-95 border border-fuchsia-500/50">Save Deck to Firebase</button>
+                        </div>
+                    </div>
+                )}
+
+                {decks.map(deck => (
+                    <div key={deck.id} onClick={() => startStudy(deck)} className="group cursor-pointer bg-[#18181b]/40 hover:bg-[#18181b]/80 border border-white/[0.05] hover:border-white/[0.15] p-6 rounded-2xl transition-all hover:scale-[1.02] relative overflow-hidden backdrop-blur-sm">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/10 rounded-full blur-3xl group-hover:bg-fuchsia-500/20 transition-all pointer-events-none"></div>
+                        <h3 className="text-xl font-bold text-white mb-2 relative z-10">{deck.title}</h3>
+                        <p className="text-sm text-zinc-400 relative z-10">{deck.cards.length} Cards</p>
+                        <div className="mt-6 flex justify-end relative z-10">
+                            <div className="bg-white/[0.05] p-2.5 rounded-full text-zinc-500 group-hover:bg-fuchsia-500/20 group-hover:text-fuchsia-400 transition-colors border border-transparent group-hover:border-fuchsia-500/30">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+          </div>
         </section>
       )}
 
-      {/* Modal Overlay */}
+      {/* 3D Study Modal */}
+      {activeDeck && (
+          <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+              
+              <div className="absolute top-8 left-8 right-8 flex justify-between items-center">
+                  <div className="text-zinc-500 font-medium tracking-widest uppercase text-xs flex items-center gap-3">
+                     <span className="text-fuchsia-500"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
+                     {activeDeck.title} <span className="text-white ml-2">— Card {currentCardIndex + 1} of {activeDeck.cards.length}</span>
+                  </div>
+                  <button onClick={() => { setActiveDeck(null); setIsFlipped(false); }} className="text-zinc-400 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] rounded-full p-2.5 transition-colors border border-white/[0.1]">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+              </div>
+
+              {/* The 3D Component */}
+              <div 
+                  className="relative w-full max-w-2xl h-96 perspective-1000 cursor-pointer group"
+                  onClick={() => setIsFlipped(!isFlipped)}
+              >
+                  <div className={`w-full h-full preserve-3d transition-transform duration-700 ease-out ${isFlipped ? '-rotate-y-180' : ''}`} style={{ transformStyle: 'preserve-3d' }}>
+                      
+                      {/* Front: Question */}
+                      <div className="absolute inset-0 backface-hidden bg-[#18181b] border border-white/[0.1] shadow-2xl rounded-3xl flex flex-col items-center justify-center p-12 hover:border-white/[0.2] transition-colors" style={{ backfaceVisibility: 'hidden' }}>
+                          <span className="absolute top-6 left-6 text-[10px] font-bold text-fuchsia-500 tracking-widest uppercase bg-fuchsia-500/10 px-3 py-1.5 rounded-full border border-fuchsia-500/20">Question</span>
+                          <h2 className="text-3xl md:text-5xl font-bold text-center text-white leading-tight">{activeDeck.cards[currentCardIndex].question}</h2>
+                          <div className="absolute bottom-6 flex items-center gap-2 text-zinc-500 opacity-50 group-hover:opacity-100 transition-opacity">
+                              <span className="text-xs font-semibold uppercase tracking-widest">Click to flip</span>
+                          </div>
+                      </div>
+
+                      {/* Back: Answer */}
+                      <div className="absolute inset-0 backface-hidden bg-gradient-to-br from-[#0f0f11] to-[#18181b] border border-cyan-500/40 shadow-[0_0_80px_rgba(6,182,212,0.15)] rounded-3xl flex flex-col items-center justify-center p-12" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                          <span className="absolute top-6 left-6 text-[10px] font-bold text-cyan-400 tracking-widest uppercase bg-cyan-500/10 px-3 py-1.5 rounded-full border border-cyan-500/20">Answer</span>
+                          <h2 className="text-2xl md:text-4xl font-semibold text-center text-cyan-50 leading-relaxed">{activeDeck.cards[currentCardIndex].answer}</h2>
+                          <div className="absolute bottom-6 flex items-center gap-2 text-zinc-500 opacity-50 group-hover:opacity-100 transition-opacity">
+                              <span className="text-xs font-semibold uppercase tracking-widest">Click to flip back</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Controls */}
+              <div className="mt-16 flex items-center gap-10">
+                  <button onClick={(e) => { e.stopPropagation(); prevCard(); }} disabled={currentCardIndex === 0} className="p-4 rounded-full bg-white/[0.05] hover:bg-white/[0.1] disabled:opacity-20 disabled:hover:bg-white/[0.05] text-white transition-all active:scale-95 border border-white/[0.05]">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  </button>
+                  <div className="w-24 md:w-48 h-1.5 bg-white/[0.1] rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-fuchsia-500 to-cyan-500 transition-all duration-300" style={{ width: `${((currentCardIndex + 1) / activeDeck.cards.length) * 100}%` }}></div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); nextCard(); }} disabled={currentCardIndex === activeDeck.cards.length - 1} className="p-4 rounded-full bg-white/[0.05] hover:bg-white/[0.1] disabled:opacity-20 disabled:hover:bg-white/[0.05] text-white transition-all active:scale-95 border border-white/[0.05]">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+              </div>
+
+          </div>
+      )}
+
+      {/* Calendar Modal Overlay */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
           <div className="bg-[#18181b] border border-white/[0.08] rounded-3xl w-full max-w-md shadow-2xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-200">
@@ -375,13 +571,18 @@ export default function StudyPlannerPage() {
                 {selectedDate && getEventsForDay(selectedDate.getDate()).length > 0 && (
                     <div className="mt-8 pt-6 border-t border-white/[0.08]">
                         <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-widest mb-3">Planned Activities</h3>
-                        <div className="space-y-2.5 overflow-y-auto max-h-[160px] pr-1 custom-scrollbar">
+                        <div className="space-y-2.5 overflow-y-auto max-h-[190px] pr-1 custom-scrollbar">
                             {getEventsForDay(selectedDate.getDate()).map(ev => (
-                                <div key={ev.id} className="flex flex-row items-center justify-between bg-[#0f0f11] border border-white/[0.05] rounded-xl p-3 shadow-inner hover:border-white/[0.1] transition-colors group">
+                                <div key={ev.id} className={`flex flex-row items-center justify-between border rounded-xl p-3 shadow-inner transition-colors group ${ev.completed ? 'bg-[#0f0f11] border-white/[0.02] opacity-60' : 'bg-[#18181b] border-white/[0.08] hover:border-white/[0.15]'}`}>
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${EVENT_COLORS[ev.type]}`}></div>
+                                        <button 
+                                            onClick={() => handleToggleComplete(ev)}
+                                            className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all ${ev.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-zinc-600 bg-black/20 text-transparent hover:border-emerald-500'}`}
+                                        >
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </button>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-medium text-white">{ev.title}</span>
+                                            <span className={`text-sm font-medium ${ev.completed ? 'text-zinc-500 line-through' : 'text-white'}`}>{ev.title}</span>
                                             <span className="text-[10px] text-zinc-500 uppercase font-semibold tracking-wider mt-0.5">{ev.type}</span>
                                         </div>
                                     </div>

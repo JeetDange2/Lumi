@@ -235,7 +235,11 @@ export default function LandingPage() {
         <Logo size="md" />
         <div className="hidden md:flex items-center gap-7 text-sm text-zinc-400">
           <a href="#" className="hover:text-white transition-colors">Features</a>
-          <a href="#" className="hover:text-white transition-colors">Community</a>
+          <a href="/profile" className="hover:text-white transition-colors font-medium">Profile</a>
+          <a href="/leaderboard" className="hover:text-fuchsia-400 transition-colors font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-orange-400 flex items-center gap-1">
+             <svg className="text-fuchsia-400" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+             Arena
+          </a>
         </div>
         <div className="flex items-center gap-3">
           {user ? (

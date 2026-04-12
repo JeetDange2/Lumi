@@ -6,8 +6,11 @@ import LandingPage from "./pages/LandingPage";
 import SmartRoadmapPage from "./pages/SmartRoadmapPage";
 import StudyPlannerPage from "./pages/StudyPlannerPage";
 import PerformanceTrackerPage from "./pages/PerformanceTrackerPage";
+import FocusModePage from "./pages/FocusModePage";
 import SocialPage from "./pages/SocialPage";
 import SignupPage from "./pages/SignupPage";
+import ProfilePage from "./pages/ProfilePage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 function App() {
   return (
@@ -19,7 +22,10 @@ function App() {
         <Route path="/roadmap-generator" element={<SmartRoadmapPage />} />
         <Route path="/study-planner" element={<StudyPlannerPage />} />
         <Route path="/performance-tracker" element={<PerformanceTrackerPage />} />
+        <Route path="/focus" element={<FocusModePage />} />
         <Route path="/social" element={<SocialPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
       </Routes>
     </Router>
   );
