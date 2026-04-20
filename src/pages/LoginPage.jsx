@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../services/firebase";
+import { signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from "firebase/auth";
+import { auth, googleProvider, githubProvider } from "../services/firebase";
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24">
@@ -56,153 +56,265 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      alert("Please enter your email address first to reset your password.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert("Password reset email sent! Check your inbox.");
+    } catch (error) {
+      console.error("Password reset error:", error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      await signInWithPopup(auth, googleProvider);
+      navigate("/home");
+    } catch (error) {
+      console.error("Google login error:", error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    try {
+      setLoading(true);
+      await signInWithPopup(auth, githubProvider);
+      navigate("/home");
+    } catch (error) {
+      console.error("GitHub login error:", error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f0f11] px-4 py-12 font-sans">
-      {/* Background grid */}
-      <div
-        className="fixed inset-0 opacity-[0.04] pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
+    <div className="min-h-screen w-full flex items-center justify-center bg-transparent text-zinc-900 dark:text-white font-sans relative overflow-hidden">
+      {/* Dynamic Background Layer */}
+      <div className="absolute inset-0 z-0">
+        <style>{`
+          @keyframes plasma {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(10%, 10%) scale(1.1); }
+            66% { transform: translate(-10%, 5%) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+          }
+          .plasma-blob {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            animation: plasma 20s infinite alternate;
+          }
+        `}</style>
+        <div className="plasma-blob -top-[20%] -left-[10%] bg-violet-600" />
+        <div className="plasma-blob -bottom-[20%] -right-[10%] bg-cyan-600" style={{ animationDelay: "-7s" }} />
+        <div className="plasma-blob top-[20%] right-[20%] bg-fuchsia-600" style={{ animationDelay: "-13s", width: '600px', height: '600px' }} />
+      </div>
 
-      {/* Glow accent */}
-      <div className="fixed top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-violet-600 opacity-10 blur-[120px] pointer-events-none" />
-
-      <div className="relative w-full max-w-sm">
-        {/* Logo + Header */}
-        <div className="text-center mb-10 flex flex-col items-center">
-          <Logo size="lg" />
-          <p className="text-sm text-zinc-400 mt-2">Sign in to your account</p>
-        </div>
-
-        {/* Card */}
-        <div className="bg-[#18181b] border border-white/[0.06] rounded-2xl p-7 shadow-2xl shadow-black/60">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={() => setFocused("email")}
-                onBlur={() => setFocused("")}
-                placeholder="you@example.com"
-                required
-                className={`w-full bg-[#0f0f11] border rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "email"
-                    ? "border-violet-500 ring-2 ring-violet-500/20"
-                    : "border-white/[0.08] hover:border-white/20"
-                  }`}
-              />
+      <div className="relative z-10 w-full flex flex-col lg:flex-row min-h-screen">
+        {/* Left Side: Branding & Features (Desktop Only) */}
+        <div className="hidden lg:flex flex-1 flex-col justify-center px-16 xl:px-24">
+          <div className="max-w-lg">
+            <div className="mb-10">
+              <Logo size="xl" />
+              <h1 className="text-5xl xl:text-6xl font-bold tracking-tight mt-6 leading-[1.1]">
+                Master anything <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">
+                  with AI power.
+                </span>
+              </h1>
+              <p className="text-zinc-400 text-lg mt-6 leading-relaxed">
+                Experience the world's most advanced AI study companion. Organize your life, generate roadmaps, and track mastery in real-time.
+              </p>
             </div>
 
-            {/* Password */}
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-medium text-zinc-400 uppercase tracking-wide">
-                  Password
-                </label>
-                <a href="#" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
-                  Forgot password?
-                </a>
+            {/* Floating Glass Cards */}
+            <div className="relative mt-12 grid grid-cols-2 gap-4">
+              <div 
+                className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-2xl"
+                style={{ animation: 'float 6s ease-in-out infinite' }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center mb-4 border border-violet-500/30">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M2 12h20" /></svg>
+                </div>
+                <h3 className="font-bold text-sm mb-1">Smart Roadmaps</h3>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Generated by AI</p>
               </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setFocused("password")}
-                  onBlur={() => setFocused("")}
-                  placeholder="••••••••"
-                  required
-                  className={`w-full bg-[#0f0f11] border rounded-xl px-4 py-2.5 pr-10 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "password"
-                      ? "border-violet-500 ring-2 ring-violet-500/20"
-                      : "border-white/[0.08] hover:border-white/20"
-                    }`}
-                />
+
+              <div 
+                className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-2xl"
+                style={{ animation: 'float 7s ease-in-out infinite', animationDelay: '-2s' }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-4 border border-cyan-500/30">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                </div>
+                <h3 className="font-bold text-sm mb-1">Mastery Tracker</h3>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Real-time Analytics</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Login Form */}
+        <div className="flex-1 flex items-center justify-center px-4 py-12 lg:bg-black/20 lg:backdrop-blur-3xl border-l border-white/5">
+          <div className="w-full max-w-sm">
+            {/* Mobile Header (Hidden on Desktop) */}
+            <div className="lg:hidden text-center mb-10 flex flex-col items-center">
+              <Logo size="lg" />
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">Sign in to your account</p>
+            </div>
+
+            {/* Card */}
+            <div className="bg-white/40 dark:bg-black/50 backdrop-blur-xl border border-black/5 dark:border-white/[0.06] rounded-3xl p-8 shadow-2xl">
+              <div className="hidden lg:block mb-8">
+                <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+                <p className="text-sm text-zinc-500 mt-1">Sign in to access your dashboard</p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Email */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setFocused("email")}
+                    onBlur={() => setFocused("")}
+                    placeholder="you@example.com"
+                    required
+                    className={`w-full bg-white dark:bg-[#0f0f11] border rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "email"
+                        ? "border-violet-500 ring-2 ring-violet-500/20"
+                        : "border-black/5 dark:border-white/[0.08] hover:border-black/20 dark:border-white/20"
+                      }`}
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">
+                      Password
+                    </label>
+                    <a href="#" onClick={handleForgotPassword} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+                      Forgot password?
+                    </a>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onFocus={() => setFocused("password")}
+                      onBlur={() => setFocused("")}
+                      placeholder="••••••••"
+                      required
+                      className={`w-full bg-white dark:bg-[#0f0f11] border rounded-xl px-4 py-3 pr-10 text-sm text-zinc-900 dark:text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "password"
+                          ? "border-violet-500 ring-2 ring-violet-500/20"
+                          : "border-black/5 dark:border-white/[0.08] hover:border-black/20 dark:border-white/20"
+                        }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                      <EyeIcon open={showPassword} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remember me */}
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setRemember(!remember)}
+                    className={`w-4 h-4 rounded flex items-center justify-center border transition-all duration-150 flex-shrink-0 ${remember
+                        ? "bg-violet-600 border-violet-600"
+                        : "bg-transparent border-black/20 dark:border-white/20 hover:border-white/40"
+                      }`}
+                  >
+                    {remember && (
+                      <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                        <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-sm text-zinc-600 dark:text-zinc-400 select-none cursor-pointer" onClick={() => setRemember(!remember)}>
+                    Remember me for 30 days
+                  </span>
+                </div>
+
+                {/* Submit */}
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-zinc-900 dark:text-white font-medium text-sm py-3.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-violet-900/40 mt-1"
                 >
-                  <EyeIcon open={showPassword} />
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" />
+                        <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
+                      </svg>
+                      Signing in...
+                    </span>
+                  ) : (
+                    "Sign in"
+                  )}
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+                <span className="text-xs text-zinc-600 lowercase tracking-wider">or continue with</span>
+                <div className="flex-1 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+              </div>
+
+              {/* Social buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button type="button" onClick={handleGoogleLogin} disabled={loading} className="flex items-center justify-center gap-2 bg-white dark:bg-[#0f0f11] border border-black/5 dark:border-white/[0.08] hover:border-black/20 dark:border-white/20 rounded-xl py-2.5 text-xs text-zinc-700 dark:text-zinc-300 font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-60 uppercase tracking-tighter">
+                  <GoogleIcon />
+                  Google
+                </button>
+                <button type="button" onClick={handleGithubLogin} disabled={loading} className="flex items-center justify-center gap-2 bg-white dark:bg-[#0f0f11] border border-black/5 dark:border-white/[0.08] hover:border-black/20 dark:border-white/20 rounded-xl py-2.5 text-xs text-zinc-700 dark:text-zinc-300 font-bold transition-all duration-200 active:scale-[0.98] disabled:opacity-60 uppercase tracking-tighter">
+                  <GitHubIcon />
+                  GitHub
                 </button>
               </div>
             </div>
 
-            {/* Remember me */}
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setRemember(!remember)}
-                className={`w-4 h-4 rounded flex items-center justify-center border transition-all duration-150 flex-shrink-0 ${remember
-                    ? "bg-violet-600 border-violet-600"
-                    : "bg-transparent border-white/20 hover:border-white/40"
-                  }`}
-              >
-                {remember && (
-                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                    <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </button>
-              <span className="text-sm text-zinc-400 select-none cursor-pointer" onClick={() => setRemember(!remember)}>
-                Remember me for 30 days
-              </span>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-medium text-sm py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-violet-900/40 mt-1"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" />
-                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                "Sign in"
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-white/[0.06]" />
-            <span className="text-xs text-zinc-600">or continue with</span>
-            <div className="flex-1 h-px bg-white/[0.06]" />
-          </div>
-
-          {/* Social buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => navigate("/home")} className="flex items-center justify-center gap-2 bg-[#0f0f11] border border-white/[0.08] hover:border-white/20 rounded-xl py-2.5 text-sm text-zinc-300 font-medium transition-all duration-200 active:scale-[0.98]">
-              <GoogleIcon />
-              Google
-            </button>
-            <button type="button" onClick={() => navigate("/home")} className="flex items-center justify-center gap-2 bg-[#0f0f11] border border-white/[0.08] hover:border-white/20 rounded-xl py-2.5 text-sm text-zinc-300 font-medium transition-all duration-200 active:scale-[0.98]">
-              <GitHubIcon />
-              GitHub
-            </button>
+            {/* Sign up */}
+            <p className="text-center text-sm text-zinc-500 mt-8">
+              Don't have an account?{" "}
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate("/signup"); }} className="text-violet-400 hover:text-violet-300 font-bold transition-colors underline underline-offset-4 decoration-violet-500/30">
+                Sign up for free
+              </a>
+            </p>
           </div>
         </div>
-
-        {/* Sign up */}
-        <p className="text-center text-sm text-zinc-500 mt-6">
-          Don't have an account?{" "}
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/signup"); }} className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
-            Sign up for free
-          </a>
-        </p>
       </div>
     </div>
   );

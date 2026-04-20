@@ -11,10 +11,14 @@ import SocialPage from "./pages/SocialPage";
 import SignupPage from "./pages/SignupPage";
 import ProfilePage from "./pages/ProfilePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import ThemeToggle from "./components/ThemeToggle";
+import DynamicBackground from "./components/DynamicBackground";
 
 function App() {
   return (
     <Router>
+      <DynamicBackground />
+      <ThemeToggle />
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/home" element={<LandingPage />} />

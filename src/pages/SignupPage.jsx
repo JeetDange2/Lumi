@@ -1,5 +1,5 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../services/firebase";
+import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider, githubProvider } from "../services/firebase";
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -56,160 +56,218 @@ export default function SignupPage() {
     }
   };
 
+  const handleGoogleSignup = async () => {
+    try {
+      setLoading(true);
+      await signInWithPopup(auth, googleProvider);
+      navigate("/");
+    } catch (error) {
+      console.error("Google signup error:", error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGithubSignup = async () => {
+    try {
+      setLoading(true);
+      await signInWithPopup(auth, githubProvider);
+      navigate("/");
+    } catch (error) {
+      console.error("GitHub signup error:", error.message);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f0f11] px-4 py-12 font-sans relative overflow-hidden">
-      {/* Background grid */}
-      <div
-        className="fixed inset-0 opacity-[0.04] pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
+    <div className="min-h-screen w-full flex items-center justify-center bg-transparent text-zinc-900 dark:text-white font-sans relative overflow-hidden">
+      {/* Dynamic Background Layer */}
+      <div className="absolute inset-0 z-0">
+        <style>{`
+          @keyframes plasma {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(10%, 10%) scale(1.1); }
+            66% { transform: translate(-10%, 5%) scale(0.9); }
+            100% { transform: translate(0, 0) scale(1); }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+          }
+          .plasma-blob {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            animation: plasma 25s infinite alternate;
+          }
+        `}</style>
+        <div className="plasma-blob -top-[10%] -left-[10%] bg-indigo-600" />
+        <div className="plasma-blob -bottom-[10%] -right-[10%] bg-blue-600" style={{ animationDelay: "-5s" }} />
+        <div className="plasma-blob top-[30%] right-[40%] bg-emerald-600" style={{ animationDelay: "-12s", width: '500px', height: '500px' }} />
+      </div>
 
-      {/* Glow accent */}
-      <div className="fixed top-[-200px] right-1/2 translate-x-1/2 w-[600px] h-[400px] rounded-full bg-violet-600 opacity-10 blur-[130px] pointer-events-none" />
+      <div className="relative z-10 w-full flex flex-col lg:flex-row min-h-screen">
+        {/* Left Side: Branding & Features (Desktop Only) */}
+        <div className="hidden lg:flex flex-1 flex-col justify-center px-16 xl:px-24">
+          <div className="max-w-lg">
+            <h2 className="text-5xl xl:text-6xl font-bold tracking-tight mb-8">
+              Unlock your <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400">
+                true potential.
+              </span>
+            </h2>
+            <p className="text-zinc-400 text-lg mt-6 leading-relaxed mb-10">
+              Join the elite circle of learners who use Lumi to automate their study paths and visualize their mastery in high-definition.
+            </p>
 
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-8 left-8 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group z-20"
-      >
-        <div className="w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center group-hover:bg-white/[0.1]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-        </div>
-        <span className="text-sm font-medium">Back to Home</span>
-      </button>
+            {/* Floating Glass Cards */}
+            <div className="relative mt-8 grid grid-cols-2 gap-4">
+              <div 
+                className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-2xl"
+                style={{ animation: 'float 6s ease-in-out infinite' }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4 border border-emerald-500/30">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M2 12h20" /></svg>
+                </div>
+                <h3 className="font-bold text-sm mb-1">AI Roadmaps</h3>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Smart Generation</p>
+              </div>
 
-      <div className="relative w-full max-w-sm z-10 mt-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold text-white tracking-tight">Create an account</h1>
-          <p className="text-sm text-zinc-400 mt-2">Join thousands of smart learners today.</p>
-        </div>
-
-        {/* Card */}
-        <div className="bg-[#18181b] border border-white/[0.06] rounded-3xl p-8 shadow-2xl shadow-black/80">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onFocus={() => setFocused("name")}
-                onBlur={() => setFocused("")}
-                placeholder="John Doe"
-                required
-                className={`w-full bg-[#0f0f11] border rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "name"
-                    ? "border-violet-500 ring-2 ring-violet-500/20"
-                    : "border-white/[0.08] hover:border-white/20"
-                  }`}
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={() => setFocused("email")}
-                onBlur={() => setFocused("")}
-                placeholder="you@example.com"
-                required
-                className={`w-full bg-[#0f0f11] border rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "email"
-                    ? "border-violet-500 ring-2 ring-violet-500/20"
-                    : "border-white/[0.08] hover:border-white/20"
-                  }`}
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setFocused("password")}
-                  onBlur={() => setFocused("")}
-                  placeholder="Create a strong password"
-                  required
-                  className={`w-full bg-[#0f0f11] border rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "password"
-                      ? "border-violet-500 ring-2 ring-violet-500/20"
-                      : "border-white/[0.08] hover:border-white/20"
-                    }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                >
-                  <EyeIcon open={showPassword} />
-                </button>
+              <div 
+                className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-2xl"
+                style={{ animation: 'float 7s ease-in-out infinite', animationDelay: '-2s' }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 border border-indigo-500/30">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                </div>
+                <h3 className="font-bold text-sm mb-1">Study Planner</h3>
+                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Interactive Habit</p>
               </div>
             </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-medium text-sm py-3.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-violet-900/40 mt-3"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" />
-                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
-                  </svg>
-                  Creating account...
-                </span>
-              ) : (
-                "Create account"
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-white/[0.06]" />
-            <span className="text-xs text-zinc-600">or sign up with</span>
-            <div className="flex-1 h-px bg-white/[0.06]" />
-          </div>
-
-          {/* Social buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => navigate("/")} className="flex items-center justify-center gap-2 bg-[#0f0f11] border border-white/[0.08] hover:border-white/20 rounded-xl py-3 text-sm text-zinc-300 font-medium transition-all duration-200 active:scale-[0.98]">
-              <GoogleIcon />
-              Google
-            </button>
-            <button type="button" onClick={() => navigate("/")} className="flex items-center justify-center gap-2 bg-[#0f0f11] border border-white/[0.08] hover:border-white/20 rounded-xl py-3 text-sm text-zinc-300 font-medium transition-all duration-200 active:scale-[0.98]">
-              <GitHubIcon />
-              GitHub
-            </button>
+            <div className="flex items-center gap-4 mt-12 px-2">
+              <div className="flex -space-x-3">
+                 {[1,2,3,4].map(i => (
+                   <div key={i} className={`w-8 h-8 rounded-full border-2 border-[#0f0f11] bg-cover bg-[url('https://api.dicebear.com/7.x/avataaars/svg?seed=${i}')]`} />
+                 ))}
+              </div>
+              <p className="text-xs text-zinc-500 font-medium">Join <span className="text-white font-bold">10,429</span> other learners building their future today.</p>
+            </div>
           </div>
         </div>
 
-        {/* Login Link */}
-        <p className="text-center text-sm text-zinc-500 mt-8">
-          Already have an account?{" "}
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/login"); }} className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
-            Sign in
-          </a>
-        </p>
+        {/* Right Side: Signup Form */}
+        <div className="flex-1 flex items-center justify-center px-4 py-12 lg:bg-black/20 lg:backdrop-blur-3xl border-l border-white/5 relative">
+          <div className="w-full max-w-sm relative">
+            <button
+              onClick={() => navigate("/")}
+              className="absolute -top-16 left-0 flex items-center gap-2 text-zinc-500 hover:text-white transition-colors group z-20"
+            >
+              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+              </div>
+              <span className="text-xs font-bold uppercase tracking-widest">Back</span>
+            </button>
+
+            {/* Mobile Header (Hidden on Desktop) */}
+            <div className="lg:hidden text-center mb-10 flex flex-col items-center">
+              <h1 className="text-3xl font-bold">Join Lumi</h1>
+              <p className="text-sm text-zinc-400 mt-2">Start your mastery journey today.</p>
+            </div>
+
+            {/* Card */}
+            <div className="bg-white/40 dark:bg-black/50 backdrop-blur-xl border border-black/5 dark:border-white/[0.06] rounded-3xl p-8 shadow-2xl">
+              <div className="hidden lg:block mb-8">
+                <h2 className="text-2xl font-bold tracking-tight">Create your account</h2>
+                <p className="text-sm text-zinc-500 mt-1">Free forever for personal use.</p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 mb-1.5 uppercase tracking-widest">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onFocus={() => setFocused("name")}
+                    onBlur={() => setFocused("")}
+                    placeholder="John Doe"
+                    required
+                    className={`w-full bg-white dark:bg-[#0f0f11] border rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "name" ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-white/5 hover:border-white/20"}`}
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 mb-1.5 uppercase tracking-widest">Email Address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setFocused("email")}
+                    onBlur={() => setFocused("")}
+                    placeholder="you@example.com"
+                    required
+                    className={`w-full bg-white dark:bg-[#0f0f11] border rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "email" ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-white/5 hover:border-white/20"}`}
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 mb-1.5 uppercase tracking-widest">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onFocus={() => setFocused("password")}
+                      onBlur={() => setFocused("")}
+                      placeholder="••••••••"
+                      required
+                      className={`w-full bg-white dark:bg-[#0f0f11] border rounded-xl px-4 py-3 pr-10 text-sm text-zinc-900 dark:text-white placeholder-zinc-600 outline-none transition-all duration-200 ${focused === "password" ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-white/5 hover:border-white/20"}`}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><EyeIcon open={showPassword} /></button>
+                  </div>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold text-sm py-3.5 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-lg shadow-emerald-900/40 mt-4"
+                >
+                  {loading ? "Creating account..." : "Start Mastery Journey"}
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 h-px bg-white/[0.06]" />
+                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Social Signup</span>
+                <div className="flex-1 h-px bg-white/[0.06]" />
+              </div>
+
+              {/* Social buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={handleGoogleSignup} className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl py-2.5 text-xs font-bold uppercase tracking-tighter"><GoogleIcon /> Google</button>
+                <button onClick={handleGithubSignup} className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl py-2.5 text-xs font-bold uppercase tracking-tighter"><GitHubIcon /> GitHub</button>
+              </div>
+            </div>
+
+            {/* Login Link */}
+            <p className="text-center text-sm text-zinc-500 mt-8">
+              Already a master? {" "}
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate("/login"); }} className="text-emerald-400 hover:text-emerald-300 font-bold transition-all underline underline-offset-4 decoration-emerald-500/30">Sign in</a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

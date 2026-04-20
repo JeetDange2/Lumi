@@ -106,7 +106,7 @@ export default function FocusModePage() {
     const progressPercent = ((totalCurrentSeconds - timeLeft) / totalCurrentSeconds) * 100;
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans relative overflow-hidden flex flex-col items-center justify-center">
+        <div className="min-h-screen bg-black text-zinc-900 dark:text-white font-sans relative overflow-hidden flex flex-col items-center justify-center">
             
             {/* Background Zen Glow */}
             <div 
@@ -120,15 +120,15 @@ export default function FocusModePage() {
             <nav className="absolute top-0 left-0 w-full p-8 flex justify-between items-center z-10">
                 <button
                     onClick={() => navigate("/planner")}
-                    className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:text-white transition-colors"
                 >
-                    <div className="w-10 h-10 rounded-full bg-white/[0.05] border border-white/[0.1] flex items-center justify-center hover:bg-white/[0.1] hover:scale-105 active:scale-95 transition-all backdrop-blur-md">
+                    <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/[0.05] border border-white/[0.1] flex items-center justify-center hover:bg-black/[0.1] dark:bg-white/[0.1] hover:scale-105 active:scale-95 transition-all backdrop-blur-md">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     </div>
                 </button>
                 <button 
                     onClick={() => setIsEditingSettings(true)}
-                    className="text-zinc-500 hover:text-white p-2"
+                    className="text-zinc-500 hover:text-zinc-900 dark:text-white p-2"
                 >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </button>
@@ -138,16 +138,16 @@ export default function FocusModePage() {
             <main className="relative z-10 flex flex-col items-center justify-center flex-1 w-full max-w-4xl mx-auto px-6">
                 
                 {/* Session Type Switcher */}
-                <div className="flex bg-white/[0.05] border border-white/[0.05] rounded-full p-1.5 mb-16 shadow-2xl backdrop-blur-md">
+                <div className="flex bg-black/5 dark:bg-white/[0.05] border border-black/5 dark:border-white/[0.05] rounded-full p-1.5 mb-16 shadow-2xl backdrop-blur-md">
                     <button 
                         onClick={() => { setMode('focus'); setIsRunning(false); setTimeLeft(focusMinutes * 60); }}
-                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${mode === 'focus' ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-zinc-500 hover:text-white'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${mode === 'focus' ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'text-zinc-500 hover:text-zinc-900 dark:text-white'}`}
                     >
                         Focus Flow
                     </button>
                     <button 
                         onClick={() => { setMode('break'); setIsRunning(false); setTimeLeft(breakMinutes * 60); }}
-                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${mode === 'break' ? 'bg-sky-500/20 text-sky-400 shadow-[0_0_15px_rgba(14,165,233,0.2)]' : 'text-zinc-500 hover:text-white'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${mode === 'break' ? 'bg-sky-500/20 text-sky-400 shadow-[0_0_15px_rgba(14,165,233,0.2)]' : 'text-zinc-500 hover:text-zinc-900 dark:text-white'}`}
                     >
                         Short Break
                     </button>
@@ -162,7 +162,7 @@ export default function FocusModePage() {
                     <div className="absolute -bottom-10 flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <button 
                             onClick={toggleTimer} 
-                            className="bg-white/10 hover:bg-white/20 text-white rounded-full p-4 transition-transform active:scale-95 backdrop-blur-xl"
+                            className="bg-black/10 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-zinc-900 dark:text-white rounded-full p-4 transition-transform active:scale-95 backdrop-blur-xl"
                         >
                             {isRunning ? (
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
@@ -172,7 +172,7 @@ export default function FocusModePage() {
                         </button>
                         <button 
                             onClick={resetTimer}
-                            className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white rounded-full p-4 transition-transform active:scale-95"
+                            className="bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-900 dark:text-white rounded-full p-4 transition-transform active:scale-95"
                         >
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
                         </button>
@@ -189,8 +189,8 @@ export default function FocusModePage() {
             {/* Distraction Blocker (Brain Dump UI) */}
             {mode === 'focus' && (
                 <div className="absolute bottom-10 left-10 right-10 md:left-auto md:right-10 md:w-[400px] z-20">
-                    <div className="bg-[#18181b]/40 backdrop-blur-2xl border border-white/[0.05] rounded-3xl p-6 shadow-2xl">
-                        <h3 className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <div className="card-hover card-shimmer bg-white/40 dark:bg-black/50 backdrop-blur-xl backdrop-blur-2xl border border-black/5 dark:border-white/[0.05] rounded-3xl p-6 shadow-2xl">
+                        <h3 className="text-zinc-600 dark:text-zinc-400 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                             Distraction Vault
                         </h3>
@@ -200,9 +200,9 @@ export default function FocusModePage() {
                                 value={brainDump}
                                 onChange={e => setBrainDump(e.target.value)}
                                 placeholder="Dump off-topic thoughts here..."
-                                className="w-full bg-black/50 border border-white/[0.05] hover:border-emerald-500/30 focus:border-emerald-500 ring-0 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition-colors"
+                                className="w-full bg-black/50 border border-black/5 dark:border-white/[0.05] hover:border-emerald-500/30 focus:border-emerald-500 ring-0 rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white placeholder-zinc-600 outline-none transition-colors"
                             />
-                            <button type="submit" className="absolute right-2 top-2 bottom-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white px-3 rounded-lg text-xs font-medium transition-colors">
+                            <button type="submit" className="absolute right-2 top-2 bottom-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-zinc-900 dark:text-white px-3 rounded-lg text-xs font-medium transition-colors">
                                 Dump
                             </button>
                         </form>
@@ -211,7 +211,7 @@ export default function FocusModePage() {
                         {thoughts.length > 0 && (
                             <div className="mt-4 flex flex-col gap-2 max-h-[120px] overflow-y-auto custom-scrollbar pr-2">
                                 {thoughts.map(t => (
-                                    <div key={t.id} className="text-xs text-zinc-500 bg-white/[0.02] border border-white/[0.02] p-2.5 rounded-lg truncate opacity-60">
+                                    <div key={t.id} className="text-xs text-zinc-500 bg-black/[0.02] dark:bg-white/[0.02] border border-white/[0.02] p-2.5 rounded-lg truncate opacity-60">
                                         • {t.text}
                                     </div>
                                 ))}
@@ -224,26 +224,26 @@ export default function FocusModePage() {
             {/* Settings Modal */}
             {isEditingSettings && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="bg-[#18181b] border border-white/[0.1] rounded-3xl p-8 max-w-sm w-full shadow-2xl">
-                        <h2 className="text-2xl font-bold tracking-tight text-white mb-6">Session Timers</h2>
+                    <div className="bg-white/40 dark:bg-black/50 backdrop-blur-xl border border-white/[0.1] rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+                        <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white mb-6">Session Timers</h2>
                         
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-xs font-medium text-zinc-400 mb-2 uppercase tracking-widest">Focus Duration (mins)</label>
+                                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2 uppercase tracking-widest">Focus Duration (mins)</label>
                                 <input 
                                     type="number" min="1" max="120" 
                                     value={focusMinutes} 
                                     onChange={e => setFocusMinutes(Number(e.target.value))} 
-                                    className="w-full bg-[#0f0f11] border border-white/[0.08] focus:border-white/[0.2] rounded-xl px-4 py-3 text-white outline-none" 
+                                    className="w-full bg-white dark:bg-[#0f0f11] border border-black/5 dark:border-white/[0.08] focus:border-white/[0.2] rounded-xl px-4 py-3 text-zinc-900 dark:text-white outline-none" 
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-zinc-400 mb-2 uppercase tracking-widest">Break Duration (mins)</label>
+                                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2 uppercase tracking-widest">Break Duration (mins)</label>
                                 <input 
                                     type="number" min="1" max="30" 
                                     value={breakMinutes} 
                                     onChange={e => setBreakMinutes(Number(e.target.value))} 
-                                    className="w-full bg-[#0f0f11] border border-white/[0.08] focus:border-white/[0.2] rounded-xl px-4 py-3 text-white outline-none" 
+                                    className="w-full bg-white dark:bg-[#0f0f11] border border-black/5 dark:border-white/[0.08] focus:border-white/[0.2] rounded-xl px-4 py-3 text-zinc-900 dark:text-white outline-none" 
                                 />
                             </div>
                             <button 

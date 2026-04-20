@@ -20,7 +20,7 @@ export default function Logo({ size = "md", showText = true }) {
         
         {/* Four-point spark / star */}
         <svg 
-          className={`${s.icon} text-white relative z-10 drop-shadow-md`} 
+          className={`${s.icon} text-zinc-900 dark:text-white relative z-10 drop-shadow-md`} 
           viewBox="0 0 24 24" 
           fill="currentColor"
         >

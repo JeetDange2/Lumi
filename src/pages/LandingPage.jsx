@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
 import { auth } from "../services/firebase";
@@ -109,9 +109,8 @@ const colorMap = {
   },
 };
 
-function FeatureCard({ card }) {
+function FeatureCard({ card, index }) {
   const navigate = useNavigate();
-  const [hovered, setHovered] = useState(false);
   const c = colorMap[card.color];
 
   const handleClick = () => {
@@ -129,17 +128,12 @@ function FeatureCard({ card }) {
   return (
     <div
       onClick={handleClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`relative group bg-[#18181b] border rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-2xl ${c.glow} ${hovered ? `border-${card.color}-500/30` : "border-white/[0.06]"
-        }`}
-      style={{
-        borderColor: hovered ? undefined : "rgba(255,255,255,0.06)",
-      }}
+      className={`relative bg-white/40 dark:bg-black/50 backdrop-blur-xl border border-black/5 dark:border-white/[0.06] rounded-2xl p-6 cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1.5 hover:shadow-2xl hover:border-white/[0.12] ${c.glow} animate-float-up group`}
+      style={{ animationDelay: `${index * 150}ms` }}
     >
       {/* Top row */}
       <div className="flex items-start justify-between mb-5">
-        <div className={`w-12 h-12 rounded-xl ${c.bg} ${c.icon} flex items-center justify-center transition-transform duration-300 ${hovered ? "scale-110" : ""}`}>
+        <div className={`w-12 h-12 rounded-xl ${c.bg} ${c.icon} flex items-center justify-center`}>
           {card.icon}
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${c.tag}`}>
@@ -148,8 +142,8 @@ function FeatureCard({ card }) {
       </div>
 
       {/* Content */}
-      <h3 className="text-white font-semibold text-lg mb-2 leading-snug">{card.title}</h3>
-      <p className="text-zinc-400 text-sm leading-relaxed mb-5">{card.description}</p>
+      <h3 className="text-zinc-900 dark:text-white font-semibold text-lg mb-2 leading-snug">{card.title}</h3>
+      <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed mb-5">{card.description}</p>
 
       {/* Footer */}
       <div className="flex items-center justify-between">
@@ -157,7 +151,7 @@ function FeatureCard({ card }) {
           <div className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
           <span className="text-xs text-zinc-500">{card.stats}</span>
         </div>
-        <button className={`text-xs font-medium flex items-center gap-1 transition-colors ${c.btn}`}>
+        <button className={`text-xs font-medium flex items-center gap-1 ${c.btn}`}>
           Explore
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7" />
@@ -165,6 +159,37 @@ function FeatureCard({ card }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function FeatureCardsSection() {
+  return (
+    <section id="features" className="relative z-10 px-6 md:px-12 pb-20 max-w-6xl mx-auto pt-8">
+      <div className="text-center mb-10">
+        <h2 className="text-2xl md:text-3xl font-semibold text-zinc-900 dark:text-white">Everything in one place</h2>
+        <p className="text-zinc-500 text-sm mt-2">Four powerful tools. One seamless platform.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {cards.map((card, index) => (
+          <FeatureCard key={card.id} card={card} index={index} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CTABannerSection() {
+  return (
+    <section className="relative z-10 px-6 md:px-12 pb-20 max-w-6xl mx-auto">
+      <div className="bg-gradient-to-r from-violet-600/20 to-pink-600/20 border border-white/[0.07] rounded-2xl px-8 py-10 text-center">
+        <h3 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-2">Ready to level up?</h3>
+        <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-6">Join 50,000+ learners already building their future.</p>
+        <button className="bg-violet-600 hover:bg-violet-500 text-zinc-900 dark:text-white font-medium text-sm px-8 py-3 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40">
+          Get started for free
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -214,28 +239,18 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f11] text-white font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-transparent text-zinc-900 dark:text-white font-sans relative overflow-hidden">
 
-      {/* Background grid */}
-      <div
-        className="fixed inset-0 opacity-[0.035] pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
+      
 
-      {/* Glow blobs */}
-      <div className="fixed top-[-150px] left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-violet-700 opacity-10 blur-[130px] pointer-events-none" />
-      <div className="fixed bottom-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-pink-700 opacity-8 blur-[100px] pointer-events-none" />
+      
 
       {/* Navbar */}
-      <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5 border-b border-white/[0.05]">
+      <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5 border-b border-black/5 dark:border-white/[0.05]">
         <Logo size="md" />
-        <div className="hidden md:flex items-center gap-7 text-sm text-zinc-400">
-          <a href="#" className="hover:text-white transition-colors">Features</a>
-          <a href="/profile" className="hover:text-white transition-colors font-medium">Profile</a>
+        <div className="hidden md:flex items-center gap-7 text-sm text-zinc-600 dark:text-zinc-400">
+          <a href="#" className="hover:text-zinc-900 dark:text-white transition-colors">Features</a>
+          <a href="/profile" className="hover:text-zinc-900 dark:text-white transition-colors font-medium">Profile</a>
           <a href="/leaderboard" className="hover:text-fuchsia-400 transition-colors font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-orange-400 flex items-center gap-1">
              <svg className="text-fuchsia-400" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
              Arena
@@ -243,13 +258,13 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <button onClick={handleLogout} className="text-sm text-zinc-400 hover:text-white transition-colors hidden md:block">
+            <button onClick={handleLogout} className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:text-white transition-colors hidden md:block">
               Log out
             </button>
           ) : (
-            <a href="/" className="text-sm text-zinc-400 hover:text-white transition-colors hidden md:block">Sign in</a>
+            <a href="/" className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:text-white transition-colors hidden md:block">Sign in</a>
           )}
-          <button onClick={scrollToFeatures} className="bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40">
+          <button onClick={scrollToFeatures} className="bg-violet-600 hover:bg-violet-500 text-zinc-900 dark:text-white text-sm font-medium px-4 py-2 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40">
             Get Started
           </button>
         </div>
@@ -257,64 +272,45 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 text-center px-6 pt-20 pb-16">
-        <div className="inline-flex items-center gap-2 bg-white/[0.05] border border-white/[0.08] rounded-full px-4 py-1.5 text-xs text-zinc-400 mb-6">
+        <div className="inline-flex items-center gap-2 bg-black/5 dark:bg-white/[0.05] border border-black/5 dark:border-white/[0.08] rounded-full px-4 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
 
         </div>
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white max-w-3xl mx-auto leading-tight">
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-zinc-900 dark:text-white max-w-3xl mx-auto leading-tight">
           Learn smarter.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400">
             Grow faster.
           </span>
         </h1>
-        <p className="mt-5 text-zinc-400 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+        <p className="mt-5 text-zinc-600 dark:text-zinc-400 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
           Everything you need to master new skills — AI roadmaps, smart scheduling, deep analytics, and a community that pushes you forward.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
-          <button onClick={scrollToFeatures} className="bg-violet-600 hover:bg-violet-500 text-white font-medium text-sm px-6 py-3 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40">
+          <button onClick={scrollToFeatures} className="bg-violet-600 hover:bg-violet-500 text-zinc-900 dark:text-white font-medium text-sm px-6 py-3 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40">
             Start To Grow
           </button>
-          <button onClick={scrollToAIAssistant} className="bg-white/[0.05] hover:bg-white/10 border border-white/[0.08] text-white font-medium text-sm px-6 py-3 rounded-xl transition-all duration-200 active:scale-95">
+          <button onClick={scrollToAIAssistant} className="bg-black/5 dark:bg-white/[0.05] hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/[0.08] text-zinc-900 dark:text-white font-medium text-sm px-6 py-3 rounded-xl transition-all duration-200 active:scale-95">
             AI Assistant
           </button>
         </div>
       </section>
 
       {/* Cards section */}
-      <section id="features" className="relative z-10 px-6 md:px-12 pb-20 max-w-6xl mx-auto pt-8">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-3xl font-semibold text-white">Everything in one place</h2>
-          <p className="text-zinc-500 text-sm mt-2">Four powerful tools. One seamless platform.</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {cards.map((card) => (
-            <FeatureCard key={card.id} card={card} />
-          ))}
-        </div>
-      </section>
+      <FeatureCardsSection />
 
       {/* CTA banner */}
-      <section className="relative z-10 px-6 md:px-12 pb-20 max-w-6xl mx-auto">
-        <div className="bg-gradient-to-r from-violet-600/20 to-pink-600/20 border border-white/[0.07] rounded-2xl px-8 py-10 text-center">
-          <h3 className="text-2xl font-semibold text-white mb-2">Ready to level up?</h3>
-          <p className="text-zinc-400 text-sm mb-6">Join 50,000+ learners already building their future.</p>
-          <button className="bg-violet-600 hover:bg-violet-500 text-white font-medium text-sm px-8 py-3 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40">
-            Get started for free
-          </button>
-        </div>
-      </section>
+      <CTABannerSection />
 
       {/* AI Chatbot Section */}
       {showAIChatbot && <AIChatbotSection />}
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/[0.05] px-6 md:px-12 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
+      <footer className="relative z-10 border-t border-black/5 dark:border-white/[0.05] px-6 md:px-12 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
         <span className="text-xs text-zinc-600">© 2026 Lumi. All rights reserved.</span>
         <div className="flex items-center gap-5 text-xs text-zinc-600">
-          <a href="#" className="hover:text-zinc-400 transition-colors">Privacy</a>
-          <a href="#" className="hover:text-zinc-400 transition-colors">Terms</a>
-          <a href="#" className="hover:text-zinc-400 transition-colors">Contact</a>
+          <a href="#" className="hover:text-zinc-600 dark:text-zinc-400 transition-colors">Privacy</a>
+          <a href="#" className="hover:text-zinc-600 dark:text-zinc-400 transition-colors">Terms</a>
+          <a href="#" className="hover:text-zinc-600 dark:text-zinc-400 transition-colors">Contact</a>
         </div>
       </footer>
     </div>
