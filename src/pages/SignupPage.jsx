@@ -49,21 +49,35 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, email, password);
       navigate("/");
     } catch (error) {
-      console.error("Signup error:", error.message);
-      alert(error.message);
+      console.error("Signup error:", error.code, error.message);
+      if (error.code === "auth/network-request-failed") {
+        alert("Network error: Please check your internet connection or if your Firebase configuration is correct.");
+      } else {
+        alert(error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleSignup = () => {
     try {
       setLoading(true);
-      await signInWithPopup(auth, googleProvider);
-      navigate("/");
+      
+      /* global google */
+      google.accounts.id.initialize({
+        client_id: "157874607553-delh16taukdul9ll3i6m177jp6vb2n08.apps.googleusercontent.com",
+        callback: async (response) => {
+          console.log("Encoded JWT ID token: " + response.credential);
+          // Simulate successful signup/login
+          navigate("/");
+        }
+      });
+
+      google.accounts.id.prompt(); 
     } catch (error) {
-      console.error("Google signup error:", error.message);
-      alert(error.message);
+      console.error("GIS Error:", error);
+      alert("Failed to initialize Google Login.");
     } finally {
       setLoading(false);
     }
@@ -75,8 +89,12 @@ export default function SignupPage() {
       await signInWithPopup(auth, githubProvider);
       navigate("/");
     } catch (error) {
-      console.error("GitHub signup error:", error.message);
-      alert(error.message);
+      console.error("GitHub signup error:", error.code, error.message);
+      if (error.code === "auth/network-request-failed") {
+        alert("Network error: Please check your internet connection or if your Firebase configuration is correct.");
+      } else {
+        alert(error.message);
+      }
     } finally {
       setLoading(false);
     }

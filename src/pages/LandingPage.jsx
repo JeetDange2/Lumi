@@ -179,19 +179,7 @@ function FeatureCardsSection() {
   );
 }
 
-function CTABannerSection() {
-  return (
-    <section className="relative z-10 px-6 md:px-12 pb-20 max-w-6xl mx-auto">
-      <div className="bg-gradient-to-r from-violet-600/20 to-pink-600/20 border border-white/[0.07] rounded-2xl px-8 py-10 text-center">
-        <h3 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-2">Ready to level up?</h3>
-        <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-6">Join 50,000+ learners already building their future.</p>
-        <button className="bg-violet-600 hover:bg-violet-500 text-zinc-900 dark:text-white font-medium text-sm px-8 py-3 rounded-xl transition-all duration-200 active:scale-95 shadow-lg shadow-violet-900/40">
-          Get started for free
-        </button>
-      </div>
-    </section>
-  );
-}
+
 
 function AIChatbotSection() {
   useEffect(() => {
@@ -241,19 +229,19 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-transparent text-zinc-900 dark:text-white font-sans relative overflow-hidden">
 
-      
 
-      
+
+
 
       {/* Navbar */}
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5 border-b border-black/5 dark:border-white/[0.05]">
         <Logo size="md" />
         <div className="hidden md:flex items-center gap-7 text-sm text-zinc-600 dark:text-zinc-400">
-          <a href="#" className="hover:text-zinc-900 dark:text-white transition-colors">Features</a>
+          <a href="/guide" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Features</a>
           <a href="/profile" className="hover:text-zinc-900 dark:text-white transition-colors font-medium">Profile</a>
           <a href="/leaderboard" className="hover:text-fuchsia-400 transition-colors font-bold text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-orange-400 flex items-center gap-1">
-             <svg className="text-fuchsia-400" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-             Arena
+            <svg className="text-fuchsia-400" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+            Arena
           </a>
         </div>
         <div className="flex items-center gap-3">
@@ -298,8 +286,7 @@ export default function LandingPage() {
       {/* Cards section */}
       <FeatureCardsSection />
 
-      {/* CTA banner */}
-      <CTABannerSection />
+
 
       {/* AI Chatbot Section */}
       {showAIChatbot && <AIChatbotSection />}
